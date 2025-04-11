@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản Lý Chi Tiêu</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+</head>
+<body>
+    <div class="container">
+        <div class="welcome-box">
+            <h1>Quản Lý Chi Tiêu</h1>
+            <p>Quản lý chi tiêu cá nhân một cách an toàn và hiệu quả.</p>
+            <div class="button-group">
+                <a href="login.html" class="btn primary-btn">Đăng Nhập</a>
+                <a href="register.html" class="btn secondary-btn">Đăng Ký</a>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/firebase.js"></script>
+    <script>
+        // Kiểm tra đăng nhập
+        firebase.auth().onAuthStateChanged(function(user) {
+            if (user) {
+                // Người dùng đã đăng nhập, chuyển hướng đến trang quản lý
+                window.location.href = 'dashboard.html';
+            }
+        });
+    </script>
+</body>
+</html> 

@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bảng Điều Khiển - Quản Lý Chi Tiêu</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+</head>
+<body>
+    <div class="dashboard-container">
+        <header class="dashboard-header">
+            <div class="logo-area">
+                <h1>Quản Lý Chi Tiêu</h1>
+            </div>
+            <div class="nav-area">
+                <div class="view-selector">
+                    <button class="view-btn active" data-view="monthly">Theo Tháng</button>
+                    <button class="view-btn" data-view="yearly">Theo Năm</button>
+                </div>
+                <button id="logoutBtn" class="btn logout-btn">Đăng Xuất</button>
+            </div>
+        </header>
+
+        <!-- Phần hiển thị theo tháng -->
+        <div class="dashboard-content view-content active" id="monthlyView">
+            <div class="period-selector">
+                <button id="prevMonth" class="btn period-btn">&lt;</button>
+                <input type="month" id="filterMonth" class="period-input">
+                <button id="nextMonth" class="btn period-btn">&gt;</button>
+            </div>
+
+            <div class="summary-section">
+                <div class="summary-card">
+                    <h3>Thu Nhập Tháng</h3>
+                    <div class="amount" id="incomeAmount">0 ₫</div>
+                    <button id="updateIncomeBtn" class="btn primary-btn small-btn">Cập nhật</button>
+                </div>
+                <div class="summary-card">
+                    <h3>Tổng Chi Tiêu</h3>
+                    <div class="amount expense" id="expenseAmount">0 ₫</div>
+                </div>
+                <div class="summary-card">
+                    <h3>Số Dư Còn Lại</h3>
+                    <div class="amount" id="balanceAmount">0 ₫</div>
+                </div>
+            </div>
+
+            <div class="monthly-layout">
+                <div class="card expense-form-card">
+                    <div class="card-header">
+                        <h2>Thêm Chi Tiêu Mới</h2>
+                    </div>
+                    <div class="card-body">
+                        <form id="expenseForm">
+                            <div class="form-group">
+                                <label for="amount">Số Tiền (₫)</label>
+                                <div class="amount-input-wrapper">
+                                    <input type="text" id="amount" required placeholder="Ví dụ: 100000" inputmode="numeric">
+                                    <span class="amount-suffix">₫</span>
+                                </div>
+                                <small class="input-helper">Chỉ nhập số, không cần nhập dấu chấm</small>
+                            </div>
+                            <div class="form-group">
+                                <label for="category">Loại Chi Tiêu</label>
+                                <select id="category" required>
+                                    <option value="">Chọn loại chi tiêu</option>
+                                    <option value="food">Ăn Uống</option>
+                                    <option value="entertainment">Giải Trí</option>
+                                    <option value="bills">Hóa Đơn & Dịch Vụ</option>
+                                    <option value="transport">Di Chuyển</option>
+                                    <option value="shopping">Mua Sắm</option>
+                                    <option value="housing">Nhà Ở</option>
+                                    <option value="health">Y Tế</option>
+                                    <option value="other">Khác</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="description">Mô Tả</label>
+                                <input type="text" id="description" required placeholder="Nhập mô tả chi tiêu">
+                            </div>
+                            <div class="form-group">
+                                <label for="date">Ngày</label>
+                                <input type="date" id="date" required>
+                            </div>
+                            <input type="hidden" id="expenseId">
+                            <div class="form-actions">
+                                <button type="submit" class="btn primary-btn">Thêm Chi Tiêu</button>
+                                <button type="button" id="cancelEditBtn" class="btn secondary-btn hidden">Hủy</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="card expense-list-card">
+                    <div class="card-header">
+                        <h2>Danh Sách Chi Tiêu</h2>
+                        <div class="expense-filters">
+                            <select id="filterCategory">
+                                <option value="">Tất Cả Các Loại</option>
+                                <option value="food">Ăn Uống</option>
+                                <option value="entertainment">Giải Trí</option>
+                                <option value="bills">Hóa Đơn & Dịch Vụ</option>
+                                <option value="transport">Di Chuyển</option>
+                                <option value="shopping">Mua Sắm</option>
+                                <option value="housing">Nhà Ở</option>
+                                <option value="health">Y Tế</option>
+                                <option value="other">Khác</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div id="expensesList" class="expenses-list">
+                            <!-- Danh sách chi tiêu sẽ được thêm vào đây -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Phần hiển thị theo năm -->
+        <div class="dashboard-content view-content" id="yearlyView">
+            <div class="period-selector">
+                <button id="prevYear" class="btn period-btn">&lt;</button>
+                <select id="yearSelector" class="period-input"></select>
+                <button id="nextYear" class="btn period-btn">&gt;</button>
+            </div>
+
+            <div class="yearly-summary">
+                <div class="card summary-card-wide">
+                    <div class="card-header">
+                        <h2>Tổng Kết Năm <span id="yearDisplay"></span></h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="yearly-stats">
+                            <div class="yearly-stat-item">
+                                <div class="stat-label">Tổng Thu Nhập</div>
+                                <div class="stat-value" id="yearlyIncomeAmount">0 ₫</div>
+                            </div>
+                            <div class="yearly-stat-item">
+                                <div class="stat-label">Tổng Chi Tiêu</div>
+                                <div class="stat-value" id="yearlyExpenseAmount">0 ₫</div>
+                            </div>
+                            <div class="yearly-stat-item">
+                                <div class="stat-label">Số Dư</div>
+                                <div class="stat-value" id="yearlyBalanceAmount">0 ₫</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="chart-container-grid">
+                    <div class="card">
+                        <div class="card-header">
+                            <h2>Chi Tiêu Theo Tháng</h2>
+                        </div>
+                        <div class="card-body">
+                            <div class="monthly-chart" id="monthlyChart">
+                                <!-- Danh sách chi tiêu theo tháng sẽ được thêm vào đây -->
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card">
+                        <div class="card-header">
+                            <h2>Chi Tiêu Theo Danh Mục</h2>
+                        </div>
+                        <div class="card-body">
+                            <div class="category-chart" id="categoryChart">
+                                <!-- Danh sách chi tiêu theo danh mục sẽ được thêm vào đây -->
+                            </div>
+                            <div class="category-list-container">
+                                <h3>Chi tiêu theo danh mục</h3>
+                                <ul id="categoryList">
+                                    <!-- Danh sách chi tiêu chi tiết sẽ được thêm vào đây -->
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card savings-card">
+                    <div class="card-header">
+                        <h2>Số Dư Tích Lũy Trong Năm</h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="savings-info">
+                            <div class="summary-item">
+                                <span class="summary-label">Tổng Tiết Kiệm:</span>
+                                <span id="yearlySavingsAmount" class="summary-value">0 ₫</span>
+                            </div>
+                            <div class="summary-item">
+                                <span class="summary-label">Chưa Phân Bổ:</span>
+                                <span id="unallocatedAmount" class="summary-value">0 ₫</span>
+                            </div>
+                        </div>
+                        <div class="summary-actions">
+                            <button id="manageSavingsBtn" class="btn primary-btn">Quản Lý Tiền Tiết Kiệm</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal quản lý tiền tiết kiệm -->
+    <div id="savingsModal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal" id="closeSavingsModal">&times;</span>
+            <h2>Quản Lý Tiền Tiết Kiệm</h2>
+            
+            <div class="savings-summary">
+                <div class="summary-item">
+                    <span class="summary-label">Số Dư Chưa Phân Bổ:</span>
+                    <span id="modalUnallocatedAmount" class="summary-value">0 ₫</span>
+                </div>
+            </div>
+            
+            <form id="savingsForm">
+                <div class="form-group">
+                    <label for="savingsAction">Hành Động</label>
+                    <select id="savingsAction" required>
+                        <option value="">-- Chọn Hành Động --</option>
+                        <option value="save">Thêm Vào Tiết Kiệm</option>
+                        <option value="withdraw">Rút Từ Tiết Kiệm</option>
+                        <option value="spend">Chi Tiêu Từ Tiết Kiệm</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="savingsAmount">Số Tiền (₫)</label>
+                    <div class="amount-input-wrapper">
+                        <input type="text" id="savingsAmount" required placeholder="Ví dụ: 1000000" inputmode="numeric">
+                        <span class="amount-suffix">₫</span>
+                    </div>
+                </div>
+                
+                <div class="form-group" id="savingsCategoryGroup" style="display: none;">
+                    <label for="savingsCategory">Loại Chi Tiêu</label>
+                    <select id="savingsCategory">
+                        <option value="">-- Chọn Loại Chi Tiêu --</option>
+                        <option value="food">Ăn Uống</option>
+                        <option value="entertainment">Giải Trí</option>
+                        <option value="bills">Hóa Đơn & Dịch Vụ</option>
+                        <option value="transport">Di Chuyển</option>
+                        <option value="shopping">Mua Sắm</option>
+                        <option value="housing">Nhà Ở</option>
+                        <option value="health">Y Tế</option>
+                        <option value="other">Khác</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="savingsDescription">Mô Tả</label>
+                    <input type="text" id="savingsDescription" placeholder="Mô tả ngắn">
+                </div>
+                
+                <button type="submit" class="btn primary-btn">Xác Nhận</button>
+            </form>
+            
+            <div class="savings-history">
+                <h3>Lịch Sử Tiết Kiệm</h3>
+                <div id="savingsHistoryList"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal cập nhật thu nhập -->
+    <div id="incomeModal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <h2>Cập Nhật Thu Nhập Tháng <span id="incomeMonthDisplay"></span></h2>
+            <form id="incomeForm">
+                <div class="form-group">
+                    <label for="incomeInput">Số Tiền Thu Nhập (₫)</label>
+                    <div class="amount-input-wrapper">
+                        <input type="text" id="incomeInput" required min="0" placeholder="Ví dụ: 10000000" inputmode="numeric">
+                        <span class="amount-suffix">₫</span>
+                    </div>
+                    <small class="input-helper">Chỉ nhập số, không cần nhập dấu chấm</small>
+                </div>
+                <button type="submit" class="btn primary-btn">Lưu</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="js/firebase.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/dashboard.js"></script>
+</body>
+</html> 
